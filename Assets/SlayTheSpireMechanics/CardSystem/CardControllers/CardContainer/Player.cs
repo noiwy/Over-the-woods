@@ -2,6 +2,7 @@
 using SlayTheSpireMechanics.Actions;
 using SlayTheSpireMechanics.VisualLogic.ObjectInterfaces;
 using System;
+using System.Collections.Generic;
 using UniRx;
 using UnityEngine;
 
@@ -10,7 +11,8 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
     public class Player : MonoBehaviour, ITargetable
     {
         [SerializeField] private GameObject healthBarPrefab;
-        [SerializeField] private Transform playerWrapper;
+        [SerializeField] private GameObject playerWrapper;
+        [SerializeField] private Transform playerPosition;
 
         [SerializeField] private int _maxCardsHold;
         public int MaxCardsHold => _maxCardsHold;
@@ -19,9 +21,8 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
         
 
         [SerializeField] private int maxMana;
-        
 
-        public Inventory Inventory { get; private set; }
+        public Inventory Inventory { get; private set; } = new Inventory();
         public CardModelContainer CardModelContainer { get; private set; }
         public ManaContainer ManaContainer { get; private set; }
 
@@ -33,21 +34,28 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
 
         public void Init()
         {
-            Inventory = new Inventory();
             CardModelContainer = new CardModelContainer(MaxCardsHold, this);
             ManaContainer = new ManaContainer(maxMana);
+
+
             Debug.Log(playerWrapper.name);
             Debug.Log(healthBarPrefab.name);
-            GameObject hb = Instantiate(healthBarPrefab, playerWrapper);
+            GameObject wrapper = Instantiate(playerWrapper, playerPosition);
+            GameObject hb = Instantiate(healthBarPrefab, wrapper.transform);
             HealthBarUI healthBar = hb.GetComponentInChildren<HealthBarUI>();
             if (healthBar != null) healthBar.Init(this);
-
+        }
+        public void DestroyTrash()
+        {
+            foreach (Transform trashObj in playerPosition.GetComponentsInChildren<Transform>())
+            {
+                Destroy(trashObj.gameObject);
+            }
         }
         public void GetDamage(int damage)
         {
             _health.Value = _health.Value - damage > 0 ? _health.Value - damage : 0;
-            IAction action = new ReceivedDamageGA(this, damage);
-            ActionSystem.Instance.AddActionToBottom(action);
+
         }
     }
 }

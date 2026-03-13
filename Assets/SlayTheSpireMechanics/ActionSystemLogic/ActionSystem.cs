@@ -1,8 +1,10 @@
+using Assets.SlayTheSpireMechanics.ActionSystemLogic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -10,191 +12,164 @@ namespace SlayTheSpireMechanics
 {
     public class ActionSystem : Singleton<ActionSystem>
     {
-        [SerializeField] public bool isPerforming = false;
-        private static Dictionary<Type, Action<IAction>> PerformerDictionary = new();
-        private static Dictionary<Type, HashSet<IActionBinding>> BindingDictionary = new();
+        private static Dictionary<Type, IActionBinding> ActionsDictionary = new();
+        private static Dictionary<Type, ICallbackBinding> CallbacksDictionary = new();
+
+        private LinkedList<Func<IEnumerator>> ActionQueue = new();
+
+        [SerializeField] private bool isQueueRunning;
         
-        private LinkedList<IAction> ActionQueue = new();
-        
-        public static void AttachPerformer<T>(Action<T> performer) where T : IAction
-        {
-            Type actionType = typeof(T);
-            AttachPerformer(actionType, a => performer((T)a));
-        }
-
-        public static void AttachPerformer(Type actionType, Action<IAction> performer)
-        {
-            PerformerDictionary[actionType] = performer;
-        }
-
-        public static void DetachPerformer<T>() where T : IAction
-        {
-            Type actionType = typeof(T);
-            DetachPerformer(actionType);
-        }
-        public static void DetachPerformer(Type actionType)
-        {
-            if (PerformerDictionary.ContainsKey(actionType))
-            {
-                PerformerDictionary.Remove(actionType);
-            }
-        }
-
-        public static ActionBinding<T> GetBinding<T>() where T : IAction
+        public static ActionBinding<T> GetActionBinding<T>() where T : IAction
         {
             Type type = typeof(T);
-            if (BindingDictionary.TryGetValue(type, out var set))
+            if (ActionsDictionary.TryGetValue(type, out var binding))
             {
-                foreach (IActionBinding binding in set)
+                if (binding is ActionBinding<T> rightBinding)
                 {
-                    if (binding is ActionBinding<T> rBinding)
-                    {
-                        return rBinding;
-                    }
+                    return rightBinding;
                 }
             }
             ActionBinding<T> newActionBinding = new ActionBinding<T>();
 
-            if (!BindingDictionary.TryGetValue(type, out var hashSet))
-            {
-                hashSet = new HashSet<IActionBinding>();
-                BindingDictionary[type] = hashSet;
-            }
-            hashSet.Add(newActionBinding);
+            ActionsDictionary[type] = newActionBinding;
+
             return newActionBinding;
         }
-
-        public static void Subscribe<T>(Func<T, IAction> action, ReactionTiming timing) where T : IAction
+        public static CallbackBinding<T> GetCallbackBindind<T>() where T : ICallback
         {
-            var binding = GetBinding<T>();
-            if (binding != null)
+            Type type = typeof(T);
+            if (CallbacksDictionary.TryGetValue(type, out var binding))
             {
-                binding.Bind(action, timing);
-            }
-        }
-        public static void SubscribeAsync<T>(Func<T, IEnumerator> action, ReactionTiming timing) where T : IAction
-        {
-            var binding = GetBinding<T>();
-            if (binding != null)
-            {
-                binding.BindAsync(action, timing);
-            }
-        }
-        public static void Unsubscribe<T>(Func<T, IAction> action, ReactionTiming timing) where T : IAction
-        {
-            var binding = GetBinding<T>();
-            if (binding != null)
-            {
-                binding.Unbind(action, timing);
-            }
-        }
-        public static void UnsubscribeAsync<T>(Func<T, IEnumerator> action, ReactionTiming timing) where T : IAction
-        {
-            var binding = GetBinding<T>();
-            if (binding != null)
-            {
-                binding.UnbindAsync(action, timing);
-            }
-        }
-
-        public void PerformPerformer(IAction action)
-        {
-            if (PerformerDictionary.TryGetValue(action.GetType(), out var performer))
-            {
-                 performer(action);
-            }
-            
-        }
-
-        public IEnumerable<IEnumerator> PerformSubscribers(IAction action, ReactionTiming timing)
-        {
-            
-            if (BindingDictionary.TryGetValue(action.GetType(), out var hashSet))
-            {
-                foreach (var binding in hashSet)
+                if (binding is CallbackBinding<T> rightBinding)
                 {
-                    yield return binding.Trigger(action, timing);
+                    return rightBinding;
                 }
             }
             
+            CallbackBinding<T> newCallbackBinding = new CallbackBinding<T>();
+
+            CallbacksDictionary[type] = newCallbackBinding;
+
+            return newCallbackBinding;
         }
 
-        public void AddActionToTop(IAction action)
+        public static void AttachPerformer<T>(Func<T, IEnumerator> performer) where T : IAction
         {
-            ActionQueue.AddFirst(action);
-        }
-
-        public void AddActionToBottom(IAction action)
-        {
-            ActionQueue.AddLast(action);
-        }
-
-        public void AddActionAfter(IAction action, IAction afterAction)
-        {
-            if (ActionQueue.Contains(action))
+            var binding = GetActionBinding<T>();
+            if (binding != null)
             {
-                ActionQueue.AddAfter(ActionQueue.Find(action), afterAction);
+                binding.BindPerformer(performer);
             }
         }
-        
-        public void AddActionBefore(IAction action, IAction beforeAction)
+        public static void DetachPerformer<T>(Func<T, IEnumerator> performer) where T : IAction
         {
-            if (ActionQueue.Contains(action))
+            var binding = GetActionBinding<T>();
+            if (binding != null)
             {
-                ActionQueue.AddAfter(ActionQueue.Find(action), beforeAction);
+                binding.UnbindPerformer(performer);
+            }
+        }
+        public static void Subscribe<T>(Func<T, IEnumerator> reaction, ReactionTiming timing) where T : IAction
+        {
+            var binding = GetActionBinding<T>();
+            if (binding != null)
+            {
+                binding.BindSubscribtion(reaction, timing);
+            }
+        }
+        public static void Subscribe<T>(Func<T, IEnumerator> reaction) where T : ICallback
+        {
+            var binding = GetCallbackBindind<T>();
+            if (binding != null)
+            {
+                binding.Bind(reaction);
             }
         }
 
-        public void CheckQueue()
+        public static void Unsubscribe<T>(Func<T, IEnumerator> reaction, ReactionTiming timing) where T : IAction
         {
-            if (ActionQueue?.First?.Value != null && !isPerforming)
+            var binding = GetActionBinding<T>();
+            if (binding != null)
             {
-                IAction action = ActionQueue.First.Value;
+                binding.UnbindSubscribtion(reaction, timing);
+            }
+        }
+        public static void UnSubscribe<T>(Func<T, IEnumerator> reaction) where T : ICallback
+        {
+            var binding = GetCallbackBindind<T>();
+            if (binding != null)
+            {
+                binding.RemoveReaction(reaction);
+            }
+        }
+
+
+        public void AddReactionsToQueue(IAction action, ReactionTiming timing)
+        {
+            if (ActionsDictionary.TryGetValue(action.GetType(), out var binding))
+            {
+                foreach (Func<IEnumerator> item in binding.GainReactions(action, timing))
+                {
+                    ActionQueue.AddLast(item);
+                }
+            }
+        }
+        public void AddReactionsToQueue(ICallback callback)
+        {
+            if (CallbacksDictionary.TryGetValue(callback.GetType(), out var binding))
+            {
+                foreach(Func<IEnumerator> item in binding.GainReactions(callback))
+                {
+                    ActionQueue.AddFirst(item);
+                }
+            }
+        }
+        public void AddPerformerToQueue(IAction action)
+        {
+            if (ActionsDictionary.TryGetValue(action.GetType(), out var binding))
+            {
+                ActionQueue.AddLast(binding.GainPerformer(action));
+            }
+        }
+
+        public void AddActionToQueue(IAction action)
+        {
+            AddReactionsToQueue(action, ReactionTiming.Pre);
+
+            AddPerformerToQueue(action);
+
+            AddReactionsToQueue(action, ReactionTiming.Post);
+        }
+        public void AddCallbackToQueue(ICallback callback)
+        {
+            AddReactionsToQueue(callback);
+        }
+
+        public IEnumerator CheckQueue()
+        {
+            while (ActionQueue.Count > 0)
+            {
+                Func<IEnumerator> action = ActionQueue.First.Value;
                 ActionQueue.RemoveFirst();
-                isPerforming = true;
-                StartCoroutine(Flow(action, () => isPerforming = false));
+                yield return action?.Invoke();
+                StartCoroutine(CheckQueue());
             }
-        }
-        
-        // ReSharper disable Unity.PerformanceAnalysis
-        public IEnumerator Flow(IAction action, Action onComplete = null) 
-        {
-            
-            if (action == null) { yield break;}
-            
-            
-            yield return StartCoroutine(WaitForAllCoroutines(PerformSubscribers(action, ReactionTiming.Pre)));
-            PerformPerformer(action);
-            yield return StartCoroutine(WaitForAllCoroutines(PerformSubscribers(action, ReactionTiming.Post)));
-            
-            
-            onComplete?.Invoke();
-        }
-        private IEnumerator WaitForAllCoroutines(IEnumerable<IEnumerator> coroutines)
-        {
-            List<Coroutine> activeCoroutines = new List<Coroutine>();
-            
-            foreach (var coroutine in coroutines)
-            {
-                if (coroutine != null)
-                {
-                    activeCoroutines.Add(StartCoroutine(coroutine));
-                }
-            }
-            
-            // Ждём завершения всех запущенных корутин
-            foreach (var activeCoroutine in activeCoroutines)
-            {
-                if (activeCoroutine != null)
-                {
-                    yield return activeCoroutine;
-                }
-            }
+            isQueueRunning = false;
         }
 
-        public void Update()
+
+
+        private void Update()
         {
-            CheckQueue();
+            if (!isQueueRunning)
+            {
+                Debug.Log(ActionQueue?.First?.Value != null);
+                isQueueRunning = true;
+                StartCoroutine(CheckQueue());
+            }
         }
+       
+
+
     }
 }

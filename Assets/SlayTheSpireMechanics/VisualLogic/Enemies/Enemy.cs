@@ -56,7 +56,7 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
         public void Act()
         {
             EnemyChoseVariants enemySetting = MakeChoice();
-            ActionSystem.Instance.AddActionToBottom(EnemyActions[enemySetting]);
+            ActionSystem.Instance.AddActionToQueue(EnemyActions[enemySetting]);
         }
         
         public void SetChances()
@@ -126,8 +126,6 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
         public void GetDamage(int damage)
         {
             _health.Value = _health.Value - damage > 0 ? _health.Value - damage : 0;
-            IAction action = new ReceivedDamageGA(this, damage);
-            ActionSystem.Instance.AddActionToBottom(action);
         }
         
     }

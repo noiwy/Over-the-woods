@@ -67,7 +67,7 @@ namespace SlayTheSpireMechanics.VisualLogic
 
         public void TriggerAction()
         {
-            ActionSystem.Instance.AddActionToBottom(CardInfo.Action);
+            ActionSystem.Instance.AddActionToQueue(CardInfo.Action);
         }
         private void OnMouseDown()
         {

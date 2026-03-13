@@ -2,11 +2,13 @@
 using SlayTheSpireMechanics.Actions;
 using SlayTheSpireMechanics.VisualLogic.GameControllers.GameStates;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UniRx;
+using Unity.VisualScripting;
 namespace Assets.SlayTheSpireMechanics.GameLogic.PlayerSystem
 {
     public class ManaContainer
@@ -28,17 +30,25 @@ namespace Assets.SlayTheSpireMechanics.GameLogic.PlayerSystem
         {
             _mana.Value = Math.Clamp(_mana.Value - value, 0, 9);
         }
-        public IAction RefillMana(ChangeTurnGA changeTurnGA)
+        public IEnumerator RefillMana(ChangeTurnGA changeTurnGA)
         {
             if (changeTurnGA.GameState == GameStateEnum.PlayerTurn)
                 _mana.Value = _maxMana.Value;
-            return null;
+            
+            yield break;
+        }
+        public IEnumerator LoseMana(ChangeTurnGA changeTurnGA)
+        {
+            if (changeTurnGA.GameState == GameStateEnum.EnemyTurn)
+                _mana.Value = 0;
+            yield break;
         }
         public ManaContainer(int max)
         {
             _maxMana.Value = max;
-            ActionSystem.Subscribe<ChangeTurnGA>(RefillMana, ReactionTiming.Pre);
+            ActionSystem.Subscribe<ChangeTurnGA>(LoseMana);
+            ActionSystem.Subscribe<ChangeTurnGA>(RefillMana);
         }
-
+        
     }
 }

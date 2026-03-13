@@ -15,7 +15,8 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
     { 
         public Transform monsterStartPosition;
 
-        public Player player; // igrok
+        [SerializeField] private Player player; // igrok
+        public Player Player => player;
 
         public List<BattleSetting> battleSettingList = new List<BattleSetting>();
 
@@ -25,12 +26,15 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
         private Dictionary<Enemy, Vector3> _occupiedSlots = new(); // zanyatie sloti
         private List<Vector3> _emptySlots = new(); // svobodniye sloti
         
-        private List<Enemy> _currentEnemies = new();
+        [SerializeField] private List<Enemy> _currentEnemies = new();
+        public List<Enemy> CurrentEnemies => _currentEnemies;
+
 
 
 
         public event Action<Enemy> OnEnemyAppeared; // handler subscribed
         public event Action<Enemy> OnEnemyDestroyed;
+
 
         [SerializeField] private int _currentTurn = 0;
         public int CurrentTurn => _currentTurn;

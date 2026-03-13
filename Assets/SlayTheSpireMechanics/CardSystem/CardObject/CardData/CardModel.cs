@@ -29,7 +29,7 @@ namespace SlayTheSpireMechanics.VisualLogic
 
         public void TriggerAction()
         {
-            ActionSystem.Instance.AddActionToBottom(Action);
+            ActionSystem.Instance.AddActionToQueue(Action);
         }
 
     }

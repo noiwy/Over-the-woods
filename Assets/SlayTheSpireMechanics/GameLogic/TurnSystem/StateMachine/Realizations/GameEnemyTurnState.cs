@@ -10,11 +10,13 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers.GameStates
         {
             _gameController.BattleController.CheckSituations();
             _gameController.BattleController.DoEnemyActions();
+
+            _gameController.MakeTransition();
         }
 
         public override void OnUpdate()
         {
-
+            _gameController.BattleController.CheckEnemies();
         }
 
         public override void OnEnd()

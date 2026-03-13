@@ -1,4 +1,6 @@
 ﻿using SlayTheSpireMechanics.Actions;
+using SlayTheSpireMechanics.VisualLogic.CardContainer;
+using System.Diagnostics;
 
 namespace SlayTheSpireMechanics.VisualLogic.GameControllers.GameStates
 {
@@ -8,9 +10,7 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers.GameStates
 
         public override void OnStart()
         {
-            
-            RefillHandGA refillHandGa = new RefillHandGA();
-            ActionSystem.Instance.AddActionToBottom(refillHandGa);
+            _gameController.BattleController.Player.CardModelContainer.RefillPlayerHand();
         }
 
         public override void OnUpdate()
@@ -20,8 +20,7 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers.GameStates
 
         public override void OnEnd()
         {
-            
-            ActionSystem.Instance.AddActionToBottom(new DiscardAllCardsGA());
+            _gameController.BattleController.Player.CardModelContainer.DiscardPlayerHand();
         }
     }
 }
