@@ -73,7 +73,7 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
             {
                 _drawCardQueue.Enqueue(CardModel);
             }
-            VisualizeCardsInQueue();
+            ActionSystem.Instance.AddMethodToQueue(VisualizeCardsInQueue);
         }
         
 
@@ -92,17 +92,13 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
             }
         }
 
-        private void VisualizeCardsInQueue()
+        private IEnumerator VisualizeCardsInQueue()
         {
             while (_drawCardQueue.Count > 0)
             {
-                ActionSystem.Instance.AddMethodToQueue(VisualizeOneCardInQueue);
+                AddCardByCardModelInHand(_drawCardQueue.Dequeue());
+                yield return new WaitForSeconds(0.1f);
             }
-        }
-        private IEnumerator VisualizeOneCardInQueue()
-        {
-            AddCardByCardModelInHand(_drawCardQueue.Dequeue());
-            yield return new WaitForSeconds(0.1f);
         }
         
         private IEnumerator DestroyCard(CardModel cardModel)
