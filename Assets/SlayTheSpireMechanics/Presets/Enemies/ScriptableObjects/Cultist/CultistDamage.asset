@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: CultistDamage
   m_EditorClassIdentifier: 
   actionType: 0
-  choseVariant: 0
+  choseVariant: 1
   damage: 4
   repeat: 1

@@ -53,8 +53,8 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
             {
                 if (i < battleSetting.enemyList.Count) 
                 { 
-                    GameObject go = Instantiate(battleSetting.enemyList[i], monsterStartPosition.position + battleSetting.slots[i], Quaternion.identity);
-                    go.transform.SetParent(monsterStartPosition);
+                    GameObject go = Instantiate(battleSetting.enemyList[i], monsterStartPosition);
+                    go.transform.localPosition = battleSetting.slots[i];
                     Enemy en = go.GetComponent<Enemy>();
                     _occupiedSlots[en] = monsterStartPosition.position + battleSetting.slots[i];
                     en.Init(this);
@@ -111,7 +111,7 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
             _emptySlots.Add(_occupiedSlots[enemy]);
             _occupiedSlots.Remove(enemy);
             OnEnemyDestroyed?.Invoke(enemy);
-            Destroy(enemy.gameObject);
+            enemy.PlayDeath();
         }
         
     }
