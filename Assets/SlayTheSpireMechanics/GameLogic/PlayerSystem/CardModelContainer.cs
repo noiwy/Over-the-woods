@@ -39,14 +39,12 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
         public CardModelContainer(int max, Player player)
         {
             Max = max;
-            ActionSystem.AttachPerformer<DrawMultipleCardsGA>(DrawMultipleCards);
-            ActionSystem.AttachPerformer<RefillHandGA>(RefillPlayerHand);
-            ActionSystem.AttachPerformer<DiscardAllCardsGA>(DiscardPlayerHand);
             _player = player;
         }
 
         public void SetDeck(List<CardModel> startDeck)
         {
+            ClearDecks();
             _drawPileList.AddRange(startDeck);
             _drawPileList.Shuffle();
         }
@@ -148,12 +146,12 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
 
 
 
-        public void RefillPlayerHand(RefillHandGA refillHandGA)
+        public void RefillPlayerHand()
         {
             DrawMultipleCardsGA drawMultipleCardsGa = new(Max);
             DrawMultipleCards(drawMultipleCardsGa);
         }
-        public void DiscardPlayerHand(DiscardAllCardsGA discardAllCardsGa)
+        public void DiscardPlayerHand()
         {
             DiscardMultiple((a) => true);
         }

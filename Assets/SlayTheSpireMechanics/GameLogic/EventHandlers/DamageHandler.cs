@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using SlayTheSpireMechanics.VisualLogic.CardActionsCode;
 using SlayTheSpireMechanics.VisualLogic.CardContainer;
@@ -26,7 +27,7 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
             _player = player;
         }
         
-        private IAction DamageCardActionPerformer(DamageCA ca)
+        private IEnumerator DamageCardActionPerformer(DamageCA ca)
         {
             if (ca.Target != null)
             {
@@ -47,20 +48,20 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
                     }
                 }
             }
-            return null;
+            yield break;
         }
 
-        private IAction DamageEnemyActionPerformer(DamageEA ea)
+        private IEnumerator DamageEnemyActionPerformer(DamageEA ea)
         {
             for (int i = 0; i < ea.Repeat; i++)
             {
                 Debug.Log("damage received by player");
                 _player.GetDamage(ea.Damage);
             }
-            return null;
+            yield break;
         }
 
-        private IAction HealEnemyActionPerformer(HealEA ea)
+        private IEnumerator HealEnemyActionPerformer(HealEA ea)
         {
             if (ea.Target == null)
                 foreach (var enemy in enemyList)
@@ -69,7 +70,7 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
                     for (int i = 0; i < ea.Repeat; i++)
                     {
                         Debug.Log("enemy healed");
-                        enemy.GetDamage(-ea.Heal);
+                        enemy.GetHeal(ea.Heal);
                     }
                 }
             else
@@ -77,11 +78,11 @@ namespace SlayTheSpireMechanics.VisualLogic.GameControllers
                 for (int i = 0; i < ea.Repeat; i++)
                 {
                     Debug.Log("enemy healed");
-                    ea.Target.GetDamage(-ea.Heal);
+                    ea.Target.GetHeal(ea.Heal);
                 }
             }
 
-                return null;
+                yield break;
         }
     }
 }

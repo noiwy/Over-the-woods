@@ -2,6 +2,7 @@
 {
     public enum EnemyChoseVariants
     {
+        None,
         WeakAttack,
         StrongAttack,
         Buff

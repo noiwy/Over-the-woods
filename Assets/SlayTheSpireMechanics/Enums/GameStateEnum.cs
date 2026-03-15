@@ -2,9 +2,11 @@
 {
     public enum GameStateEnum
     {
+        Null,
         PlayerTurn,
         EnemyTurn,
         GameOver,
-        Pause
+        BattleEnter,
+        BattleEnd
     }
 }

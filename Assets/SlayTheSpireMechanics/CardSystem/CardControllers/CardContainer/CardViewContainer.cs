@@ -32,27 +32,40 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
         public List<CardView> cardList = new List<CardView>();
         private int _maxCards;
 
-        public Action<Dictionary<CardView, Vector3>, Dictionary<CardView, Vector3>> OnCardPositionChanged;
+        public event Action<Dictionary<CardView, Vector3>, Dictionary<CardView, Vector3>> OnCardPositionChanged;
         
         public void Init(Player player, CardHoverSystem cardHover, CardAnimator animator)
         {
             cardHoverSystem = cardHover;
             cardAnimator = animator;
+            OnCardPositionChanged += cardAnimator.UpdateCardStartPositions;
+        }
+        public void Init(Player player)
+        {
             _maxCards = player.MaxCardsHold;
-
             player.CardModelContainer.OnRefillFinished += AcceptDrawCardList;
             player.CardModelContainer.OnDiscardFinished += AcceptDiscardCardList;
             player.CardModelContainer.OnCardPlayed += (cm) => AcceptDiscardCardList(new List<CardModel> { cm });
-            OnCardPositionChanged += cardAnimator.UpdateCardStartPositions;
-
         }
+        public void DestroyTrash()
+        {
+            _drawCardQueue.Clear();
+            _discardCardQueue.Clear();
+            cardList.Clear();
+            foreach (var card in GetComponentsInChildren<Transform>())
+            {
+                Destroy(card.gameObject);
+
+            }
+        }
+
         private void AcceptDiscardCardList(List<CardModel> cm)
         {
             foreach (var CardModel in cm)
             {
                 _discardCardQueue.Enqueue(CardModel);
             }
-            StartCoroutine(DeleteCardsInQueue());
+            ActionSystem.Instance.AddMethodToQueue(DeleteCardsInQueue);
         }
         private void AcceptDrawCardList(List<CardModel> cm)
         {
@@ -60,12 +73,13 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
             {
                 _drawCardQueue.Enqueue(CardModel);
             }
-            StartCoroutine(VisualizeCardsInQueue());
+            ActionSystem.Instance.AddMethodToQueue(VisualizeCardsInQueue);
         }
         
 
         private IEnumerator DeleteCardsInQueue()
         {
+            
             while (_discardCardQueue.Count > 0)
             {
                 CardModel card = _discardCardQueue.Dequeue();
@@ -154,7 +168,7 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
                 cardPositions[cardList[i]] = p;
                 cardRotations[cardList[i]] = euler;       
             }
-            OnCardPositionChanged.Invoke(cardPositions, cardRotations);
+            OnCardPositionChanged?.Invoke(cardPositions, cardRotations);
             foreach (var cv in cardList)
             {
 

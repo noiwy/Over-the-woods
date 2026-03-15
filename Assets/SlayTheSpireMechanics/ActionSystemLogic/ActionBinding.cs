@@ -9,12 +9,10 @@ namespace SlayTheSpireMechanics
 {
     public class ActionBinding<T> : IActionBinding where T : IAction
     {
-        public HashSet<Func<T, IAction>> Pre = new();
-        public HashSet<Func<T, IAction>> Post = new();
+        private HashSet<Func<T, IEnumerator>> PreReactions = new();
+        private Func<T, IEnumerator> Performer;
+        private HashSet<Func<T, IEnumerator>> PostReactions = new();
 
-        public HashSet<Func<T, IEnumerator>> PreAnimation = new();
-        public HashSet<Func<T, IEnumerator>> PostAnimation = new();
-        
         public Type Type { get; }
 
         public ActionBinding()
@@ -22,67 +20,64 @@ namespace SlayTheSpireMechanics
             Type = typeof(T);
         }
         
-        // ReSharper disable Unity.PerformanceAnalysis
-        public IEnumerator Trigger(IAction action, ReactionTiming reactionTiming)
+      
+        public List<Func<IEnumerator>> GainReactions(IAction action, ReactionTiming reactionTiming)
         {
-            HashSet<Func<T, IAction>> reactions = reactionTiming == ReactionTiming.Pre ? Pre : Post;
-            HashSet<Func<T, IEnumerator>> chainReactions = reactionTiming == ReactionTiming.Pre ? PreAnimation : PostAnimation;
+            HashSet<Func<T, IEnumerator>> reactions = reactionTiming == ReactionTiming.Pre ? PreReactions : PostReactions;
             
             if (action is T a)
             {
-                foreach (var reaction in chainReactions)
-                {
-                    yield return reaction(a);
-                }
+                List<Func<IEnumerator>> gatheredReactions = new();
                 foreach (var reaction in reactions)
                 {
-                    IAction chain = reaction(a);
-                    if (chain != null)
-                    {
-                        ActionSystem.Instance.AddActionToTop(action);
-                    }
-                    
+                    gatheredReactions.Add(() => reaction(a));
                 }
+                return gatheredReactions;
             }
-            
+            return null;
+        }
+        public Func<IEnumerator> GainPerformer(IAction action)
+        {
+            {
+            if (action is T a)
+                if (Performer != null)
+                return () => Performer(a);
+            }
+            return null;
         }
         
-        public bool RemoveReaction(Delegate reaction, ReactionTiming timing)
+        public void RemoveReaction(Delegate reaction, ReactionTiming timing)
         { 
-            if (reaction is not Func<T, IAction> action) {return false;}
+            if (reaction is not Func<T, IEnumerator> action) {return;}
             
-            return Unbind(action, timing);
+            UnbindSubscribtion(action, timing);
         }
 
-        public bool RemoveReactionAsync(Func<T, IEnumerator> reaction, ReactionTiming timing)
-        {
-            return UnbindAsync(reaction, timing);
-        }
 
-        public bool Unbind(Func<T, IAction> reaction, ReactionTiming timing)
+        public void UnbindSubscribtion(Func<T, IEnumerator> reaction, ReactionTiming timing)
         {
-            if (reaction == null){ return false; }
+            if (reaction == null){ return; }
             
-            HashSet<Func<T, IAction>> reactions = timing == ReactionTiming.Pre ? Pre : Post;
-            return reactions.Remove(reaction);
+            HashSet<Func<T, IEnumerator>> reactions = timing == ReactionTiming.Pre ? PreReactions : PostReactions;
+            reactions.Remove(reaction);
         }
 
-        public bool UnbindAsync(Func<T, IEnumerator> reaction, ReactionTiming reactionTiming)
+        public void BindSubscribtion(Func<T, IEnumerator> reaction, ReactionTiming reactionTiming)
         {
-            HashSet<Func<T, IEnumerator>> reactionSet = reactionTiming == ReactionTiming.Pre ? PreAnimation : PostAnimation;
-            return  reactionSet.Remove(reaction);
-        }
-
-        public void Bind(Func<T, IAction> reaction, ReactionTiming reactionTiming)
-        {
-            HashSet<Func<T, IAction>> reactions = reactionTiming == ReactionTiming.Pre ? Pre : Post;
+            HashSet<Func<T, IEnumerator>> reactions = reactionTiming == ReactionTiming.Pre ? PreReactions : PostReactions;
             reactions.Add(reaction);
         }
-
-        public void BindAsync(Func<T, IEnumerator> reaction, ReactionTiming reactionTiming)
+        public void BindPerformer(Func<T, IEnumerator> performer)
         {
-            HashSet<Func<T, IEnumerator>> reactions = reactionTiming == ReactionTiming.Pre ? PreAnimation : PostAnimation;
-            reactions.Add(reaction);
+            Performer = performer;
         }
+        public void UnbindPerformer(Func<T, IEnumerator> performer)
+        {
+            if (Performer == performer)
+            {
+                Performer = null;
+            }
+        }
+
     }
 }

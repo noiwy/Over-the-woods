@@ -32,15 +32,6 @@ namespace SlayTheSpireMechanics.VisualLogic.CardContainer
         [SerializeField] private CardView _draggingCard;
 
         private Vector3 _startDragPosition;
-
-
-
-        private event Action<CardView> onCardPlayed;
-        public event Action<CardView> onCardHovered;
-        public event Action<CardView> onCardDragging;
-
-
-
         public Action cardActiveEnter;
         public Action cardActiveExit;
 

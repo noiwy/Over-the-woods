@@ -8,7 +8,17 @@ namespace SlayTheSpireMechanics.VisualLogic.ObjectInterfaces
         public IReadOnlyReactiveProperty<int> Health { get; }
         public IReadOnlyReactiveProperty<int> MaxHealth { get; }
 
-       
-        public void GetDamage(int damageCa);
+
+
+        public void GetDamage(int damage);
+
+        public void GetHeal(int heal);
+
+
+        public void IncreaseMaxHealth(int amount);
+
+
+        public void DecreaseMaxHealth(int amount);
+
     }
 }

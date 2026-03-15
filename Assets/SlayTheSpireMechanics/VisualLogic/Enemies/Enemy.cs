@@ -16,30 +16,37 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
 {
     public abstract class Enemy : MonoBehaviour, ITargetable
     {
-        [SerializeField] private ReactiveProperty<int> _health;
-        [SerializeField] private GameObject healthBarPrefab;
+        [Header("RuntimeInfo")]
+        [SerializeField] private EnemyChoseVariants chosenVariant = 0;
 
-        private BattleController _battleController;
+        [SerializeField] private ReactiveProperty<int> _health;
         public IReadOnlyReactiveProperty<int> Health => _health;
 
-        public EnemySetting enemySetting;
+        [SerializeField] private ReactiveProperty<int> _maxHealth = new ReactiveProperty<int>();
+        public IReadOnlyReactiveProperty<int> MaxHealth => _maxHealth;
+
+        [Header("Dependencies")]
+        [SerializeField] private GameObject healthBarPrefab;
+        [SerializeField] private Animator animator;
+        [SerializeField] private BattleController _battleController;
         
+
         public Dictionary<EnemyChoseVariants, IEnemyAction> EnemyActions = new();
 
+        [Header("Settings")]
+        [SerializeField]private EnemySetting enemySetting;
         public SerializedDictionary<EnemyChoseVariants, int> ActionsPercentage = new();
         public SerializedDictionary<EnemyChoseVariants, int> MaxActionRepeat = new();
         public SerializedDictionary<EnemyChoseVariants, int> ActionStartTurn = new();
         public SerializedDictionary<EnemyChoseVariants, BattleSituationsEnum> ActionConditionEnter = new();
+        public SerializedDictionary<EnemyChoseVariants, string> AnimationTriggers = new();
 
 
-
-        private List<EnemyChoseVariants> _choseVariantsSet = new();
+        private List<EnemyChoseVariants> _percentageList = new();
         
         private List<EnemyChoseVariants> previousActions = new();
 
-        [SerializeField] private ReactiveProperty<int> _maxHealth = new ReactiveProperty<int>();
-        public IReadOnlyReactiveProperty<int> MaxHealth => _maxHealth;
-        
+
 
         public void Init(BattleController bc)
         {
@@ -51,12 +58,33 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
 
             HealthBarUI healthBar = Instantiate(healthBarPrefab, transform).GetComponentInChildren<HealthBarUI>();
             if (healthBar != null) healthBar.Init(this);
+
+            
+        }
+        public void DoPlannedAction()
+        {
+            if (chosenVariant != 0)
+            {
+                ActionSystem.Instance.AddActionToQueue(EnemyActions[chosenVariant]);
+                chosenVariant = 0;
+            }
+        }
+        public void PlanAction()
+        {
+            chosenVariant = MakeChoice();
         }
 
         public void Act()
         {
-            EnemyChoseVariants enemySetting = MakeChoice();
-            ActionSystem.Instance.AddActionToBottom(EnemyActions[enemySetting]);
+            PlanAction();
+            if (animator != null)
+            {
+                animator.SetTrigger(AnimationTriggers[chosenVariant]);
+            }
+            else
+            {
+                DoPlannedAction();
+            }
         }
         
         public void SetChances()
@@ -65,14 +93,15 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
             {
                 for (int i = 0; i < action.Value; i++)
                 {
-                    _choseVariantsSet.Add(action.Key);
+                    _percentageList.Add(action.Key);
+                    
                 }
             }
         }
 
         public EnemyChoseVariants RollChoice()
         {
-            return _choseVariantsSet[Random.Range(0, _choseVariantsSet.Count)];
+            return _percentageList[Random.Range(0, _percentageList.Count)];
         }
 
         public EnemyChoseVariants MakeChoice()
@@ -122,13 +151,45 @@ namespace SlayTheSpireMechanics.VisualLogic.Enemies
             } while (!isAllGood);
             return potential;
         }
+        public void PlayDeath()
+        {
+            if (animator != null)
+            {
+                animator.SetTrigger("Death");
+            }
+            else
+            {
+                SelfDestroy();
+            }
+
+        }
+        public void SelfDestroy()
+        {
+            Destroy(gameObject);
+        }
         
         public void GetDamage(int damage)
         {
+            if (damage < 0) { return; }
             _health.Value = _health.Value - damage > 0 ? _health.Value - damage : 0;
-            IAction action = new ReceivedDamageGA(this, damage);
-            ActionSystem.Instance.AddActionToBottom(action);
         }
-        
+        public void GetHeal(int heal)
+        {
+            if (heal < 0) { return; }
+            _health.Value = _health.Value + heal < _maxHealth.Value ? _health.Value + heal : _maxHealth.Value;
+        }
+
+        public void IncreaseMaxHealth(int amount)
+        {
+            if (amount < 0) { return; }
+            _maxHealth.Value = _maxHealth.Value + amount < 999 ? _maxHealth.Value + amount : 999;
+        }
+
+        public void DecreaseMaxHealth(int amount)
+        {
+            if (amount < 0) { return; }
+            _maxHealth.Value = _maxHealth.Value - amount > 1 ? _maxHealth.Value - amount : 1;
+            if (_health.Value > _maxHealth.Value) _health.Value = _maxHealth.Value;
+        }
     }
 }
